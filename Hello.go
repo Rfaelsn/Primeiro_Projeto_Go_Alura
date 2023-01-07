@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -16,7 +17,6 @@ const delay = 5
 
 func main() {
 	for {
-		leSitesDoArquivo()
 		exibeIntroducao()
 		exibeMenu()
 
@@ -83,9 +83,11 @@ func leComando() int {
 
 func iniciarMonitoramento() {
 	fmt.Println("Monitorando.....")
-	sites := []string{
-		"https://www.google.com", "http://www.alura.com.br",
-		"http://www.caelum.com.br", "https://random-status-code.herokuapp.com/"}
+	/* sites := []string{
+	"https://www.google.com", "http://www.alura.com.br",
+	"http://www.caelum.com.br", "https://random-status-code.herokuapp.com/"} */
+
+	sites := leSitesDoArquivo()
 
 	for i := 0; i < monitoramentos; i++ {
 		for i, site := range sites {
@@ -108,8 +110,10 @@ func testaSite(site string, i int) {
 
 	if resp.StatusCode == 200 {
 		fmt.Println("o Site;", site, " na posição ", i, " foi carregado com sucesso!")
+		registraLog(site, true)
 	} else {
 		fmt.Println("o site: ", site, " na posição ", i, " está com problemas... status: ", resp.StatusCode)
+		registraLog(site, false)
 	}
 
 }
@@ -128,12 +132,26 @@ func leSitesDoArquivo() []string {
 
 		linha, err := leitor.ReadString('\n')
 		linha = strings.TrimSpace(linha)
-		fmt.Println(linha)
+		sites = append(sites, linha)
 
 		if err == io.EOF {
 			break
 		}
 	}
 
+	arquivo.Close()
 	return sites
+}
+
+func registraLog(site string, status bool) {
+
+	arquivo, err := os.OpenFile("log.txt", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+
+	if err != nil {
+		fmt.Println("Error:", err)
+	}
+
+	arquivo.WriteString(site + " -Online: " + strconv.FormatBool(status) + "\n")
+
+	fmt.Println(arquivo)
 }
